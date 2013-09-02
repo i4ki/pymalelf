@@ -55,14 +55,7 @@ Binary_traverse(Binary *self, visitproc visit, void *arg)
 {
     Py_VISIT(self->fname);
     Py_VISIT(self->bkpfile);
-    Py_VISIT(self->fd);
     Py_VISIT(self->mem);
-    Py_VISIT(self->size);
-    Py_VISIT(self->ehdr);
-    Py_VISIT(self->phdr);
-    Py_VISIT(self->shdr);
-    Py_VISIT(self->alloc_type);
-    Py_VISIT(self->arch);
 
     return 0;
 }
@@ -74,14 +67,7 @@ static int Binary_clear(Binary *self)
 {
         Py_CLEAR(self->fname);
         Py_CLEAR(self->bkpfile);
-        Py_CLEAR(self->fd);
         Py_CLEAR(self->mem);
-        Py_CLEAR(self->size);
-        Py_CLEAR(self->ehdr);
-        Py_CLEAR(self->phdr);
-        Py_CLEAR(self->shdr);
-        Py_CLEAR(self->alloc_type);
-        Py_CLEAR(self->arch);
 
         return 0;
 }
@@ -95,7 +81,8 @@ Binary_dealloc(Binary *self)
 {
         Binary_clear(self);
         free(self->_bin);
-        self->ob_type->tp_free((PyObject *) self);
+        _PyObject_GC_UNTRACK(self);
+        Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *
@@ -178,11 +165,23 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
 static void
 PyMalelf_refresh_binary(Binary *self)
 {
+        PyObject *tmp = self->fname;
         self->fname = PyString_FromString(self->_bin->fname);
+        Py_INCREF(self->fname);
+        if (tmp) {
+                Py_XDECREF(tmp);
+        }
+
         self->bkpfile = PyString_FromString(self->_bin->bkpfile);
         self->fd = self->_bin->fd;
+
+        tmp = self->mem;
         self->mem = PyBytes_FromStringAndSize(self->_bin->mem,
                                               self->_bin->size);
+        Py_INCREF(self->mem);
+        if (tmp) {
+                Py_XDECREF(tmp);
+        }
         self->size = self->_bin->size;
         self->alloc_type = self->_bin->alloc_type;;
         self->arch = self->_bin->class;
@@ -283,8 +282,8 @@ static PyTypeObject BinaryType = {
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
     "Binary objects",           /* tp_doc */
-    0,   /* tp_traverse */
-    0,           /* tp_clear */
+    (traverseproc)Binary_traverse,   /* tp_traverse */
+    (inquiry)Binary_clear,           /* tp_clear */
     0,		               /* tp_richcompare */
     0,		               /* tp_weaklistoffset */
     0,		               /* tp_iter */
