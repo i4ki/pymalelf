@@ -181,7 +181,8 @@ PyMalelf_refresh_binary(Binary *self)
         self->fname = PyString_FromString(self->_bin->fname);
         self->bkpfile = PyString_FromString(self->_bin->bkpfile);
         self->fd = self->_bin->fd;
-        self->mem = PyBytes_FromString(self->_bin->mem);
+        self->mem = PyBytes_FromStringAndSize(self->_bin->mem,
+                                              self->_bin->size);
         self->size = self->_bin->size;
         self->alloc_type = self->_bin->alloc_type;;
         self->arch = self->_bin->class;
@@ -237,6 +238,7 @@ static PyMemberDef Binary_members[] = {
      "input file name"},
     {"bkpfile", T_OBJECT_EX, offsetof(Binary, bkpfile), 0,
      "backup file for write operations"},
+    {"fd", T_INT, offsetof(Binary, fd), 0, "File descriptor"},
     {"mem", T_OBJECT_EX, offsetof(Binary, mem), 0, "memory bytes"},
     {"size", T_INT, offsetof(Binary, size), 0, "size of binary"},
     {"ehdr", T_OBJECT_EX, offsetof(Binary, ehdr), 0, "Ehdr"},
