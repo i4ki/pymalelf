@@ -4,11 +4,15 @@
 #include <malelf/types.h>
 #include <malelf/binary.h>
 
+#include "malelfcompat.h"
+#include "binary.h"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Header file for spammodule */
+/* Header file for malelfmodule */
 
 /* C API functions */
 #define PyMalelf_BinaryOpen_NUM 0
@@ -18,14 +22,13 @@ extern "C" {
 /* Total number of C API pointers */
 #define PyMalelf_API_pointers 1
 
-
 #ifdef MALELF_MODULE
-/* This section is used when compiling spammodule.c */
+/* This section is used when compiling malelfmodule.c */
 
 static PyMalelf_BinaryOpen_RETURN PyMalelf_BinaryOpen PyMalelf_BinaryOpen_PROTO;
 
 #else
-/* This section is used in modules that use spammodule's API */
+/* This section is used in modules that use malelfmodule's API */
 
 static void **PyMalelf_API;
 
@@ -36,7 +39,7 @@ static void **PyMalelf_API;
  * PyCapsule_Import will set an exception if there's an error.
  */
 static int
-import_spam(void)
+import_malelf(void)
 {
     PyMalelf_API = (void **)PyCapsule_Import("malelf._C_API", 0);
     return (PyMalelf_API != NULL) ? 0 : -1;
