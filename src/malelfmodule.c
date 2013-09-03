@@ -116,7 +116,6 @@ initmalelf(void)
 
         struct module_state *st = GETSTATE(m);
 
-        BinaryType.tp_new = PyType_GenericNew;
         if (PyType_Ready(&BinaryType) < 0) {
                 return;
         }

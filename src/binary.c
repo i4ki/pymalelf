@@ -11,7 +11,6 @@ static int
 Binary_traverse(Binary *self, visitproc visit, void *arg)
 {
     Py_VISIT(self->fname);
-    Py_VISIT(self->bkpfile);
     Py_VISIT(self->mem);
 
     return 0;
@@ -23,7 +22,6 @@ Binary_traverse(Binary *self, visitproc visit, void *arg)
 static int Binary_clear(Binary *self)
 {
         Py_CLEAR(self->fname);
-        Py_CLEAR(self->bkpfile);
         Py_CLEAR(self->mem);
 
         return 0;
@@ -63,13 +61,6 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
                 self->fname = PyUnicode_FromString("");
                 if (NULL == self->fname)
-                {
-                        Py_DECREF(self);
-                        return NULL;
-                }
-
-                self->bkpfile = PyUnicode_FromString("");
-                if (NULL == self->bkpfile)
                 {
                         Py_DECREF(self);
                         return NULL;
@@ -134,7 +125,6 @@ PyMalelf_refresh_binary(Binary *self)
                 Py_XDECREF(tmp);
         }
 
-        self->bkpfile = PyString_FromString(self->_bin->bkpfile);
         self->fd = self->_bin->fd;
 
         tmp = self->mem;
@@ -176,7 +166,12 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
                 self->_bin = malloc(sizeof (MalelfBinary));
         }
 
-        malelf_binary_init(self->_bin);
+        if (NULL == self->_bin) {
+                printf("initiating again ...\n");
+                malelf_binary_init(self->_bin);
+        } else {
+                printf("already started\n");
+        }
 
         result = malelf_binary_open(self->_bin, PyString_AsString(fname));
 
@@ -194,18 +189,14 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
 }
 
 static PyMemberDef Binary_members[] = {
-    {"fname", T_OBJECT_EX, offsetof(Binary, fname), 0,
-     "input file name"},
-    {"bkpfile", T_OBJECT_EX, offsetof(Binary, bkpfile), 0,
-     "backup file for write operations"},
+    {"fname", T_OBJECT_EX, offsetof(Binary, fname), 0, "input file name"},
     {"fd", T_INT, offsetof(Binary, fd), 0, "File descriptor"},
     {"mem", T_OBJECT_EX, offsetof(Binary, mem), 0, "memory bytes"},
     {"size", T_INT, offsetof(Binary, size), 0, "size of binary"},
     {"ehdr", T_OBJECT_EX, offsetof(Binary, ehdr), 0, "Ehdr"},
     {"phdr", T_OBJECT_EX, offsetof(Binary, phdr), 0, "Phdr"},
     {"shdr", T_OBJECT_EX, offsetof(Binary, shdr), 0, "Shdr"},
-    {"alloc_type", T_INT, offsetof(Binary, alloc_type), 0,
-     "Allocation type"},
+    {"alloc_type", T_INT, offsetof(Binary, alloc_type), 0, "Allocation type"},
     {"arch", T_INT, offsetof(Binary, arch), 0, "Binary class"},
     {NULL}  /* Sentinel */
 };
