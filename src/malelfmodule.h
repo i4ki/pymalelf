@@ -7,8 +7,6 @@
 #include "pydefines.h"
 #include "malelfcompat.h"
 #include "binary.h"
-#include "pyerror.h"
-
 
 #ifdef __cplusplus
 extern "C" {

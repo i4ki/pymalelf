@@ -101,7 +101,7 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
         }
 
         if (fname) {
-                if (! PyString_Check(fname)) {
+                if (! PyUnicode_Check(fname) && ! PyString_Check(fname)) {
                         PyErr_SetString(PyExc_TypeError,
                                         "The fname attribute value must be a string");
                         return -1;
@@ -119,7 +119,7 @@ static void
 PyMalelf_refresh_binary(Binary *self)
 {
         PyObject *tmp = self->fname;
-        self->fname = PyString_FromString(self->_bin->fname);
+        self->fname = PyUnicode_FromString(self->_bin->fname);
         Py_INCREF(self->fname);
         if (tmp) {
                 Py_XDECREF(tmp);
@@ -152,41 +152,53 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
                 return NULL;
         }
 
-        if (!fname) {
+        if (!fname && !self->fname) {
+                PyErr_SetString(PyExc_TypeError,
+                                "No file passed to be opened, nor the object "
+                                "has a fname already setted.");
                 return NULL;
         }
 
-        if (! PyString_Check(fname)) {
+        if (!fname) {
+                fname = self->fname;
+        } else {
+                PyObject *tmp = self->fname;
+                Py_INCREF(fname);
+                self->fname = fname;
+                Py_XDECREF(tmp);
+        }
+
+        if (! PyUnicode_Check(fname) && ! PyString_Check(fname)) {
                 PyErr_SetString(PyExc_TypeError,
                                 "The fname attribute value must be a string");
                 return NULL;
         }
 
-        if (!self->_bin) {
-                self->_bin = malloc(sizeof (MalelfBinary));
-        }
+        const char * asciifname;
 
-        char *asciiname = PyString_AsString(fname);
+#if defined(IS_PY3K)
+        PyObject *un_ascii = PyUnicode_AsASCIIString(fname);
+        asciifname = PyBytes_AsString(un_ascii);
+        Py_XDECREF(un_ascii);
+#else
+        asciifname = PyString_AsString(fname);
+#endif
 
-        result = malelf_binary_open(self->_bin, asciiname);
+        result = malelf_binary_open(self->_bin, asciifname);
 
         if (MALELF_SUCCESS != result) {
                 const char *strerror = malelf_strerror(result);
                 const char *errformat = "Failed to open file '%s'.\nErrorCode:"
                                         " %u, Message: %s\n";
-                char buffer[PYMALELF_MAX_MSG_ERROR];
-                snprintf(buffer,
-                         PYMALELF_MAX_MSG_ERROR,
-                         errformat,
-                         asciiname,
-                         result,
-                         strerror);
-                PyErr_Format(GETSTATE(self)->error, buffer);
+                PyErr_Format(GETSTATE(self)->error,
+                             errformat,
+                             asciifname,
+                             result,
+                             strerror);
                 return NULL;
         }
 
         PyMalelf_refresh_binary(self);
-
         pyresult = PyLong_FromLong(0);
 
         return pyresult;

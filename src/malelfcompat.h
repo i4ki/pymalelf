@@ -27,7 +27,6 @@
 
 #        define PyString_Check PyUnicode_Check
 #        define PyString_FromString PyUnicode_FromString
-#        define PyString_AsString PyUnicode_AS_DATA
 #else
 #        define GETSTATE(m) (&_state)
 #        define STATESTUB struct module_state _state;
