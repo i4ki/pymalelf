@@ -1,7 +1,9 @@
 #include <Python.h>
 #include <structmember.h>
 
+#include "pydefines.h"
 #include "malelfcompat.h"
+#include "malelfmodule.h"
 #include "binary.h"
 
 #include <malelf/binary.h>
@@ -93,8 +95,6 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
 
         static char *kwlist[] = {"fname", "alloc_type", "arch", NULL};
 
-        printf("Inside binary_init()\n");
-
         if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Oii", kwlist,
                                           &fname, &alloc_type, &arch)) {
                 return -1;
@@ -166,18 +166,22 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
                 self->_bin = malloc(sizeof (MalelfBinary));
         }
 
-        if (NULL == self->_bin) {
-                printf("initiating again ...\n");
-                malelf_binary_init(self->_bin);
-        } else {
-                printf("already started\n");
-        }
+        char *asciiname = PyString_AsString(fname);
 
-        result = malelf_binary_open(self->_bin, PyString_AsString(fname));
+        result = malelf_binary_open(self->_bin, asciiname);
 
         if (MALELF_SUCCESS != result) {
-                PyErr_SetString(PyExc_TypeError,
-                                "Failed to open binary file");
+                const char *strerror = malelf_strerror(result);
+                const char *errformat = "Failed to open file '%s'.\nErrorCode:"
+                                        " %u, Message: %s\n";
+                char buffer[PYMALELF_MAX_MSG_ERROR];
+                snprintf(buffer,
+                         PYMALELF_MAX_MSG_ERROR,
+                         errformat,
+                         asciiname,
+                         result,
+                         strerror);
+                PyErr_Format(GETSTATE(self)->error, buffer);
                 return NULL;
         }
 

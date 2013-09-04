@@ -4,8 +4,10 @@
 #include <malelf/types.h>
 #include <malelf/binary.h>
 
+#include "pydefines.h"
 #include "malelfcompat.h"
 #include "binary.h"
+#include "pyerror.h"
 
 
 #ifdef __cplusplus
@@ -13,6 +15,11 @@ extern "C" {
 #endif
 
 /* Header file for malelfmodule */
+
+struct module_state {
+        /* Malelficus Exception Handler */
+        PyObject *error;
+};
 
 /* C API functions */
 #define PyMalelf_BinaryOpen_NUM 0

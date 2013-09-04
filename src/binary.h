@@ -1,6 +1,7 @@
 #ifndef MALELF_MODULE_BINARY_H
 #define MALELF_MODULE_BINARY_H
 
+#include "malelfcompat.h"
 #include <malelf/binary.h>
 
 typedef struct {
@@ -23,5 +24,9 @@ typedef struct {
 } Binary;
 
 extern PyTypeObject BinaryType;
+
+#if !defined(IS_PY3K)
+extern struct module_state _state;
+#endif
 
 #endif /* MALELF_MODULE_BINARY_H */

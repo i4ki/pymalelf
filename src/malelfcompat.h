@@ -30,7 +30,7 @@
 #        define PyString_AsString PyUnicode_AS_DATA
 #else
 #        define GETSTATE(m) (&_state)
-#        define STATESTUB static struct module_state _state;
+#        define STATESTUB struct module_state _state;
 #endif
 
 #endif /* MALELF_MODULE_COMPAT_H */

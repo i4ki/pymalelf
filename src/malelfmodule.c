@@ -8,11 +8,6 @@
 #include <malelf/binary.h>
 #include <malelf/error.h>
 
-struct module_state {
-        /* Malelficus Exception Handler */
-        PyObject *error;
-};
-
 STATESTUB
 
 static _u32
@@ -120,14 +115,14 @@ initmalelf(void)
                 return;
         }
 
-        st->error = PyErr_NewException("malelf.error", NULL, NULL);
+        st->error = PyErr_NewException("malelf.Error", NULL, NULL);
         if (NULL == st->error) {
                 Py_DECREF(m);
                 INITERROR;
         }
 
         Py_INCREF(st->error);
-        PyModule_AddObject(m, "error", st->error);
+        PyModule_AddObject(m, "Error", st->error);
 
         Py_INCREF(&BinaryType);
         PyModule_AddObject(m, "Binary", (PyObject *)&BinaryType);
