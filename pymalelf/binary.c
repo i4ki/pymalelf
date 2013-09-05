@@ -36,10 +36,10 @@ static int Binary_clear(Binary *self)
 static void
 Binary_dealloc(Binary *self)
 {
+        PYDEBUG("deallocating malelf.Binary()\n");
         Binary_clear(self);
         malelf_binary_close(self->_bin);
         free(self->_bin);
-        _PyObject_GC_UNTRACK(self);
         Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
@@ -92,8 +92,8 @@ static int
 Binary_init(Binary *self, PyObject *args, PyObject *kwds)
 {
         PyObject *fname = NULL, *tmp;
-        _u8 alloc_type = 0;
-        _u32 arch = 0;
+        _u32 alloc_type = MALELF_ALLOC_MMAP;
+        _u32 arch = MALELF_ELF;
 
         static char *kwlist[] = {"fname", "alloc_type", "arch", NULL};
 
@@ -113,6 +113,11 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
                 self->fname = fname;
                 Py_XDECREF(tmp);
         }
+
+        self->alloc_type = alloc_type;
+        malelf_binary_set_alloc_type(self->_bin, alloc_type);
+        self->_bin->class = arch;
+        self->arch = arch;
 
         return 0;
 }
@@ -161,6 +166,7 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
         if (fname) {
                 if (0 == PyString_Size(self->fname) &&
                     0 == PyString_Size(fname)) {
+                        Py_XDECREF(fname);
                         goto exit_no_fname;
                 }
         } else {
@@ -195,6 +201,12 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
         asciifname = PyString_AsString(fname);
 #endif
 
+        if (self->_bin && self->_bin->mem && self->_bin->size > 0) {
+                PYDEBUG("closing current opened binary...\n");
+                malelf_binary_close(self->_bin);
+                malelf_binary_init(self->_bin);
+        }
+
         result = malelf_binary_open(self->_bin, asciifname);
 
         if (MALELF_SUCCESS != result) {
@@ -210,7 +222,9 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
         }
 
         PyMalelf_refresh_binary(self);
-        return self;
+        PyObject *success = PyBool_FromLong(1);
+        Py_INCREF(success);
+        return success;
 
 exit_no_fname:
         PyErr_SetString(PyExc_ValueError,

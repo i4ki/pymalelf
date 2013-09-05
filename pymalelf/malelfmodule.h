@@ -12,11 +12,35 @@
 extern "C" {
 #endif
 
+#define PYMALELF_DEBUG 1
+
+#define PYDEBUG(x...) if (PYMALELF_DEBUG) printf(x)
+
 /* Header file for malelfmodule */
 
 struct module_state {
         /* Malelficus Exception Handler */
         PyObject *error;
+
+        /* Format constants */
+        PyObject *FMT_ELF;
+        PyObject *FMT_FLAT;
+        PyObject *ELF;
+        PyObject *ELFNONE;
+        PyObject *ELF32;
+        PyObject *ELF64;
+        PyObject *FLAT;
+        PyObject *FLAT32;
+        PyObject *FLAT64;
+
+        /* allocation type constants */
+        PyObject *ALLOC_NONE;
+        PyObject *ALLOC_MMAP;
+        PyObject *ALLOC_MALLOC;
+
+        PyObject *ORIGIN;
+        PyObject *MAGIC_BYTES;
+        PyObject *PAGE_SIZE;
 };
 
 /* C API functions */

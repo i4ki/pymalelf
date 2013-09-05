@@ -46,6 +46,17 @@ static PyMethodDef MalelfMethods[] = {
         {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+#define PyMalelf_add_intconstant(module, var, value, name)      \
+        do {                                                    \
+                var = PyLong_FromLong(value);                   \
+                if (var) {                                      \
+                        PyModule_AddObject(module, name, var);  \
+                } else {                                        \
+                        Py_DECREF(module);                      \
+                        INITERROR;                              \
+                }                                               \
+        } while(0)
+
 #if defined(IS_PY3K)
 
 static int
@@ -123,6 +134,21 @@ initmalelf(void)
 
         Py_INCREF(st->error);
         PyModule_AddObject(m, "Error", st->error);
+
+        PyMalelf_add_intconstant(m, st->FMT_ELF, MALELF_FMT_ELF, "FMT_ELF");
+        PyMalelf_add_intconstant(m, st->FMT_FLAT, MALELF_FMT_FLAT, "FMT_FLAT");
+        PyMalelf_add_intconstant(m, st->ELF, MALELF_ELF, "ELF");
+        PyMalelf_add_intconstant(m, st->ELF32, MALELF_ELF32, "ELF32");
+        PyMalelf_add_intconstant(m, st->ELF64, MALELF_ELF64, "ELF64");
+        PyMalelf_add_intconstant(m, st->FLAT, MALELF_FLAT, "FLAT");
+        PyMalelf_add_intconstant(m, st->FLAT32, MALELF_FLAT32, "FLAT32");
+        PyMalelf_add_intconstant(m, st->FLAT64, MALELF_FLAT64, "FLAT64");
+        PyMalelf_add_intconstant(m, st->ALLOC_NONE, MALELF_ALLOC_NONE, "ALLOC_NONE");
+        PyMalelf_add_intconstant(m, st->ALLOC_MMAP, MALELF_ALLOC_MMAP, "ALLOC_MMAP");
+        PyMalelf_add_intconstant(m, st->ALLOC_MALLOC, MALELF_ALLOC_MALLOC, "ALLOC_MALLOC");
+        PyMalelf_add_intconstant(m, st->ORIGIN, MALELF_ORIGIN, "ORIGIN");
+        PyMalelf_add_intconstant(m, st->MAGIC_BYTES, MALELF_MAGIC_BYTES, "MAGIC_BYTES");
+        PyMalelf_add_intconstant(m, st->PAGE_SIZE, MALELF_PAGE_SIZE, "PAGE_SIZE");
 
         Py_INCREF(&BinaryType);
         PyModule_AddObject(m, "Binary", (PyObject *)&BinaryType);
