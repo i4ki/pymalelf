@@ -67,8 +67,6 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
                         return NULL;
                 }
 
-                Py_INCREF(self->fname);
-
                 Py_INCREF(Py_None);
                 self->mem = Py_None;
                 if (NULL == self->mem) {

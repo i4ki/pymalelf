@@ -82,7 +82,48 @@ class TestBinary(unittest.TestCase):
             binary.open("/etc/passwd")
 
         exc = err.exception
-        self.assertEqual(exc.code, 43)
+        self.assertEqual(exc.code, malelf.ErrorCode.NOT_ELF)
+
+        res = binary.open("/bin/ls")
+        self.assertEqual(binary.fname, "/bin/ls")
+        self.assertTrue(binary.size > 0)
+        self.assertIsNotNone(binary.mem)
+        self.assertIsInstance(binary.mem, str)
+        self.assertTrue(len(binary.mem) > 0)
+        self.assertTrue(res)
+        self.assertEqual(binary.alloc_type, malelf.ALLOC_MMAP)
+        self.assertEqual(binary.arch, malelf.ELF32)
+
+        res = binary.open("/bin/bash")
+        self.assertEqual(binary.fname, "/bin/bash")
+        self.assertTrue(binary.size > 0)
+        self.assertIsNotNone(binary.mem)
+        self.assertIsInstance(binary.mem, str)
+        self.assertTrue(len(binary.mem) > 0)
+        self.assertTrue(res)
+        self.assertEqual(binary.alloc_type, malelf.ALLOC_MMAP)
+        self.assertEqual(binary.arch, malelf.ELF32)
+
+        binary.close()
+
+    def test_binary_close(self):
+        binary = malelf.Binary("/bin/ls")
+        res = binary.open()
+        self.assertTrue(res)
+        res = binary.close()
+        self.assertTrue(res)
+        self.assertEqual(binary.fname, "/bin/ls")
+        self.assertIsNone(binary.mem)
+        self.assertEqual(binary.size, 0)
+
+        binary = malelf.Binary("/bin/ls")
+        res = binary.open()
+        self.assertTrue(res)
+        binary.close()
+        self.assertIsNone(binary.mem)
+        self.assertEqual(binary.fname, "/bin/ls")
+        self.assertEqual(binary.size, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -6,6 +6,6 @@ if __name__ == "__main__":
     try:
         b = malelf.Binary()
         b.open("/798798798")
-        print b.fname
+        print(b.fname)
     except malelf.Error as e:
-        print "Error code: %d" % e.code
+        print("Error code: %d" % e.code)
