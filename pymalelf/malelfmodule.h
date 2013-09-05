@@ -12,7 +12,7 @@
 extern "C" {
 #endif
 
-#define PYMALELF_DEBUG 1
+#define PYMALELF_DEBUG 0
 
 #define PYDEBUG(x...) if (PYMALELF_DEBUG) printf(x)
 

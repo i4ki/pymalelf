@@ -59,7 +59,8 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
                 malelf_binary_init(self->_bin);
 
-                self->fname = PyUnicode_FromString("");
+                Py_INCREF(Py_None);
+                self->fname = Py_None;
                 if (NULL == self->fname)
                 {
                         Py_DECREF(self);
@@ -68,13 +69,12 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
                 Py_INCREF(self->fname);
 
-                self->mem = PyBytes_FromString("");
+                Py_INCREF(Py_None);
+                self->mem = Py_None;
                 if (NULL == self->mem) {
                         Py_DECREF(self);
                         return NULL;
                 }
-
-                Py_INCREF(self->mem);
 
                 self->fd = self->_bin->fd;
                 self->size = self->_bin->size;
@@ -125,22 +125,32 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
 static void
 PyMalelf_refresh_binary(Binary *self)
 {
+        if (! self->_bin) {
+                return;
+        }
+
         PyObject *tmp = self->fname;
-        self->fname = PyUnicode_FromString(self->_bin->fname);
-        Py_INCREF(self->fname);
-        if (tmp) {
+
+        if (self->_bin->fname) {
+                self->fname = PyUnicode_FromString(self->_bin->fname);
+                Py_INCREF(self->fname);
                 Py_XDECREF(tmp);
         }
 
         self->fd = self->_bin->fd;
 
         tmp = self->mem;
-        self->mem = PyBytes_FromStringAndSize(self->_bin->mem,
-                                              self->_bin->size);
-        Py_INCREF(self->mem);
-        if (tmp) {
+
+        if (self->_bin->mem) {
+                self->mem = PyBytes_FromStringAndSize(self->_bin->mem,
+                                                      self->_bin->size);
+                Py_INCREF(self->mem);
                 Py_XDECREF(tmp);
+        } else {
+                Py_INCREF(Py_None);
+                self->mem = Py_None;
         }
+
         self->size = self->_bin->size;
         self->alloc_type = self->_bin->alloc_type;;
         self->arch = self->_bin->class;
@@ -234,6 +244,17 @@ exit_no_fname:
 
 }
 
+static PyObject *
+Binary_close(Binary *self)
+{
+        malelf_binary_close(self->_bin);
+        PyMalelf_refresh_binary(self);
+
+        PyObject *success = PyBool_FromLong(1);
+        Py_INCREF(success);
+        return success;
+}
+
 static PyMemberDef Binary_members[] = {
     {"fname", T_OBJECT_EX, offsetof(Binary, fname), 0, "input file name"},
     {"fd", T_INT, offsetof(Binary, fd), 0, "File descriptor"},
@@ -249,8 +270,8 @@ static PyMemberDef Binary_members[] = {
 
 static PyMethodDef Binary_methods[] = {
     {"open", (PyCFunction)Binary_open, METH_VARARGS|METH_KEYWORDS,
-     "Opens a new binary"
-     },
+     "Opens a new binary"},
+    {"close", (PyCFunction)Binary_close, METH_NOARGS, "Closes the binary"},
     {NULL}  /* Sentinel */
 };
 
