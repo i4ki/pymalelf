@@ -1,6 +1,7 @@
 import malelf
 import unittest
 
+
 class TestBinary(unittest.TestCase):
     binary = None
 
@@ -16,6 +17,11 @@ class TestBinary(unittest.TestCase):
             self.assertTrue(1 == 1,
                             ("malelf.Binary constructor failed with "
                              "exception %s" % e))
+
             print e.message
         except e:
             print e
+
+
+if __name__ == "__main__":
+    unittest.main()

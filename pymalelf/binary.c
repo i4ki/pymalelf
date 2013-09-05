@@ -57,8 +57,6 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
                         return NULL;
                 }
 
-                printf("inside Binary_new()\n");
-
                 malelf_binary_init(self->_bin);
 
                 self->fname = PyUnicode_FromString("");
@@ -68,11 +66,15 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
                         return NULL;
                 }
 
+                Py_INCREF(self->fname);
+
                 self->mem = PyBytes_FromString("");
                 if (NULL == self->mem) {
                         Py_DECREF(self);
                         return NULL;
                 }
+
+                Py_INCREF(self->mem);
 
                 self->fd = self->_bin->fd;
                 self->size = self->_bin->size;
@@ -142,7 +144,7 @@ PyMalelf_refresh_binary(Binary *self)
 static PyObject *
 Binary_open(Binary *self, PyObject *args, PyObject *kwds)
 {
-        PyObject *fname = NULL, *pyresult;
+        PyObject *fname = NULL;
         _u32 result;
 
         static char *kwlist[] = {"fname", NULL};
@@ -153,10 +155,19 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
         }
 
         if (!fname && !self->fname) {
-                PyErr_SetString(PyExc_TypeError,
-                                "No file passed to be opened, nor the object "
-                                "has a fname already setted.");
-                return NULL;
+                goto exit_no_fname;
+        }
+
+        if (fname) {
+                if (0 == PyString_Size(self->fname) &&
+                    0 == PyString_Size(fname)) {
+                        goto exit_no_fname;
+                }
+        } else {
+                /* fname is NULL */
+                if (0 == PyString_Size(self->fname)) {
+                        goto exit_no_fname;
+                }
         }
 
         if (!fname) {
@@ -199,9 +210,14 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
         }
 
         PyMalelf_refresh_binary(self);
-        pyresult = PyLong_FromLong(0);
+        return self;
 
-        return pyresult;
+exit_no_fname:
+        PyErr_SetString(PyExc_ValueError,
+                        "No file passed to be opened, nor the object "
+                        "has a fname already setted.");
+        return NULL;
+
 }
 
 static PyMemberDef Binary_members[] = {

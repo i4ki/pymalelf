@@ -7,8 +7,8 @@ malelfmodule = Extension('malelf',
                          include_dirs=['/usr/local/include'],
                          libraries=['malelf'],
                          library_dirs=['/usr/lib'],
-                         sources=['src/malelfmodule.c',
-                                  'src/binary.c'])
+                         sources=['pymalelf/malelfmodule.c',
+                                  'pymalelf/binary.c'])
 
 setup(name='PyMalelf',
       version='1.0',
