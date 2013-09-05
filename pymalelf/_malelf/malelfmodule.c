@@ -78,7 +78,7 @@ malelf_clear(PyObject *self)
 
 static struct PyModuleDef malelfmodule = {
         PyModuleDef_HEAD_INIT,
-        "malelf",
+        "_malelf",
         NULL,
         sizeof (struct module_state),
         MalelfMethods,
@@ -91,19 +91,19 @@ static struct PyModuleDef malelfmodule = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_malelf(void)
+PyInit__malelf(void)
 
 #else
 #define INITERROR return
 
 PyMODINIT_FUNC
-initmalelf(void)
+init_malelf(void)
 #endif
 {
 #if defined(IS_PY3K)
         PyObject *m = PyModule_Create(&malelfmodule);
 #else
-        PyObject *m = Py_InitModule("malelf", MalelfMethods);
+        PyObject *m = Py_InitModule("_malelf", MalelfMethods);
 #endif
         if (m == NULL)
                 INITERROR;
@@ -126,7 +126,7 @@ initmalelf(void)
                 return;
         }
 
-        st->error = PyErr_NewException("malelf.Error", NULL, NULL);
+        st->error = PyErr_NewException("_malelf.Error", NULL, NULL);
         if (NULL == st->error) {
                 Py_DECREF(m);
                 INITERROR;
