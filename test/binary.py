@@ -1,5 +1,6 @@
 import malelf
-import unittest2 as unittest
+import unittest as unittest
+import errno
 
 
 class TestBinary(unittest.TestCase):
@@ -49,15 +50,39 @@ class TestBinary(unittest.TestCase):
             self.assertEqual(binary.fname, "/bin/ls")
             self.assertEqual(binary.alloc_type, malelf.ALLOC_MALLOC)
 
-        except malelf.Error, e:
+        except malelf.Error as e:
             self.assertTrue(1 == 0,
                             ("malelf.Binary constructor failed with "
                              "exception %s" % e))
 
-            print e.message
-        except Exception, e:
-            print e
+        except Exception as e:
+            print (e)
 
+    def test_binary_open(self):
+        binary = malelf.Binary()
+        with self.assertRaises(TypeError):
+            binary.open()
+        with self.assertRaises(TypeError):
+            binary.open(None)
+        with self.assertRaises(TypeError):
+            binary.open(0)
+        with self.assertRaises(TypeError):
+            binary.open([])
+        with self.assertRaises(TypeError):
+            binary.open({})
+
+        with self.assertRaises(malelf.Error) as err:
+            binary.open("/dfghjkertyui")
+
+        exc = err.exception
+        # ENOENT
+        self.assertEqual(exc.code, errno.ENOENT)
+
+        with self.assertRaises(malelf.Error) as err:
+            binary.open("/etc/passwd")
+
+        exc = err.exception
+        self.assertEqual(exc.code, 43)
 
 if __name__ == "__main__":
     unittest.main()
