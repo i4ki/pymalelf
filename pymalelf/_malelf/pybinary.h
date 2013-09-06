@@ -1,8 +1,10 @@
 #ifndef MALELF_MODULE_BINARY_H
 #define MALELF_MODULE_BINARY_H
 
-#include "malelfcompat.h"
 #include <malelf/binary.h>
+
+#include "malelfcompat.h"
+#include "pyehdr.h"
 
 typedef struct {
         PyObject_HEAD
@@ -13,7 +15,7 @@ typedef struct {
         _i32 fd;           /* Binary file descriptor */
         PyObject *mem;     /* Binary content */
         _u32 size;         /* Binary size */
-        PyObject *ehdr;    /* ELF Header */
+        Ehdr *ehdr;        /* ELF Header */
         PyObject *phdr;    /* Elf Program Headers */
         PyObject *shdr;    /* Elf Section Headers */
         _u8 alloc_type;    /* System function used to allocate memory */

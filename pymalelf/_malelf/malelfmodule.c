@@ -1,12 +1,13 @@
 #include <Python.h>
 #include <structmember.h> /* Python PyObject structure accessors */
 
-#define MALELF_MODULE
-#include "malelfmodule.h"
-#include "binary.h"
-
 #include <malelf/binary.h>
 #include <malelf/error.h>
+
+#define MALELF_MODULE
+#include "malelfmodule.h"
+#include "pyehdr.h"
+#include "pybinary.h"
 
 STATESTUB
 
@@ -63,6 +64,26 @@ static int
 malelf_traverse(PyObject *self, visitproc visit, void *arg)
 {
         Py_VISIT(GETSTATE(self)->error);
+
+        Py_VISIT(GETSTATE(self)->FMT_ELF);
+        Py_VISIT(GETSTATE(self)->FMT_FLAT);
+        Py_VISIT(GETSTATE(self)->ELF);
+        Py_VISIT(GETSTATE(self)->ELFNONE);
+        Py_VISIT(GETSTATE(self)->ELF32);
+        Py_VISIT(GETSTATE(self)->ELF64);
+        Py_VISIT(GETSTATE(self)->FLAT);
+        Py_VISIT(GETSTATE(self)->FLAT32);
+        Py_VISIT(GETSTATE(self)->FLAT64);
+
+        /* allocation type constants */
+        Py_VISIT(GETSTATE(self)->ALLOC_NONE);
+        Py_VISIT(GETSTATE(self)->ALLOC_MMAP);
+        Py_VISIT(GETSTATE(self)->ALLOC_MALLOC);
+
+        Py_VISIT(GETSTATE(self)->ORIGIN);
+        Py_VISIT(GETSTATE(self)->MAGIC_BYTES);
+        Py_VISIT(GETSTATE(self)->PAGE_SIZE);
+
         return 0;
 }
 
@@ -73,6 +94,25 @@ static int
 malelf_clear(PyObject *self)
 {
         Py_CLEAR(GETSTATE(self)->error);
+
+        Py_CLEAR(GETSTATE(self)->FMT_ELF);
+        Py_CLEAR(GETSTATE(self)->FMT_FLAT);
+        Py_CLEAR(GETSTATE(self)->ELF);
+        Py_CLEAR(GETSTATE(self)->ELFNONE);
+        Py_CLEAR(GETSTATE(self)->ELF32);
+        Py_CLEAR(GETSTATE(self)->ELF64);
+        Py_CLEAR(GETSTATE(self)->FLAT);
+        Py_CLEAR(GETSTATE(self)->FLAT32);
+        Py_CLEAR(GETSTATE(self)->FLAT64);
+
+        /* allocation type constants */
+        Py_CLEAR(GETSTATE(self)->ALLOC_NONE);
+        Py_CLEAR(GETSTATE(self)->ALLOC_MMAP);
+        Py_CLEAR(GETSTATE(self)->ALLOC_MALLOC);
+
+        Py_CLEAR(GETSTATE(self)->ORIGIN);
+        Py_CLEAR(GETSTATE(self)->MAGIC_BYTES);
+        Py_CLEAR(GETSTATE(self)->PAGE_SIZE);
         return 0;
 }
 
@@ -105,8 +145,9 @@ init_malelf(void)
 #else
         PyObject *m = Py_InitModule("_malelf", MalelfMethods);
 #endif
-        if (m == NULL)
+        if (m == NULL) {
                 INITERROR;
+        }
 
         static void *PyMalelf_API[PyMalelf_API_pointers];
         PyObject *c_api_object;
@@ -121,19 +162,6 @@ init_malelf(void)
                 PyModule_AddObject(m, "_C_API", c_api_object);
 
         struct module_state *st = GETSTATE(m);
-
-        if (PyType_Ready(&BinaryType) < 0) {
-                return;
-        }
-
-        st->error = PyErr_NewException("_malelf.Error", NULL, NULL);
-        if (NULL == st->error) {
-                Py_DECREF(m);
-                INITERROR;
-        }
-
-        Py_INCREF(st->error);
-        PyModule_AddObject(m, "Error", st->error);
 
         PyMalelf_add_intconstant(m, st->FMT_ELF, MALELF_FMT_ELF, "FMT_ELF");
         PyMalelf_add_intconstant(m, st->FMT_FLAT, MALELF_FMT_FLAT, "FMT_FLAT");
@@ -150,8 +178,31 @@ init_malelf(void)
         PyMalelf_add_intconstant(m, st->MAGIC_BYTES, MALELF_MAGIC_BYTES, "MAGIC_BYTES");
         PyMalelf_add_intconstant(m, st->PAGE_SIZE, MALELF_PAGE_SIZE, "PAGE_SIZE");
 
+        st->error = PyErr_NewException("_malelf.Error", NULL, NULL);
+        if (NULL == st->error) {
+                Py_DECREF(m);
+                INITERROR;
+        }
+
+        Py_INCREF(st->error);
+        PyModule_AddObject(m, "Error", st->error);
+
+        if (PyType_Ready(&BinaryType) < 0) {
+                Py_DECREF(m);
+                INITERROR;
+        }
+
         Py_INCREF(&BinaryType);
-        PyModule_AddObject(m, "Binary", (PyObject *)&BinaryType);
+        PyModule_AddObject(m, "Binary", (PyObject *) &BinaryType);
+
+        if (PyType_Ready(&EhdrType) < 0) {
+                Py_DECREF(m);
+                INITERROR;
+        }
+
+        Py_INCREF(&EhdrType);
+        PyModule_AddObject(m, "Ehdr", (PyObject *) &EhdrType);
+
 #if defined(IS_PY3K)
         return m;
 #endif

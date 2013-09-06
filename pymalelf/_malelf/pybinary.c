@@ -4,7 +4,7 @@
 #include "pydefines.h"
 #include "malelfcompat.h"
 #include "malelfmodule.h"
-#include "binary.h"
+#include "pybinary.h"
 
 #include <malelf/binary.h>
 #include <malelf/error.h>
@@ -14,6 +14,9 @@ Binary_traverse(Binary *self, visitproc visit, void *arg)
 {
         Py_VISIT(self->fname);
         Py_VISIT(self->mem);
+        Py_VISIT(self->ehdr);
+        Py_VISIT(self->phdr);
+        Py_VISIT(self->shdr);
 
         return 0;
 }
@@ -25,6 +28,9 @@ static int Binary_clear(Binary *self)
 {
         Py_CLEAR(self->fname);
         Py_CLEAR(self->mem);
+        Py_CLEAR(self->ehdr);
+        Py_CLEAR(self->phdr);
+        Py_CLEAR(self->shdr);
 
         return 0;
 }
@@ -36,7 +42,7 @@ static int Binary_clear(Binary *self)
 static void
 Binary_dealloc(Binary *self)
 {
-        PYDEBUG("deallocating malelf.Binary()\n");
+        PYDEBUG("deallocating _malelf.Binary()\n");
         Binary_clear(self);
         malelf_binary_close(self->_bin);
         free(self->_bin);
@@ -76,9 +82,15 @@ Binary_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
                 self->fd = self->_bin->fd;
                 self->size = self->_bin->size;
-                self->ehdr = NULL;
-                self->phdr = NULL;
-                self->shdr = NULL;
+
+                Py_INCREF(Py_None);
+                self->ehdr = Py_None;
+
+                Py_INCREF(Py_None);
+                self->phdr = Py_None;
+
+                Py_INCREF(Py_None);
+                self->shdr = Py_None;
 
                 self->alloc_type = self->_bin->alloc_type;
         }
@@ -123,6 +135,8 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
 static void
 PyMalelf_refresh_binary(Binary *self)
 {
+        _u32 result;
+
         if (! self->_bin) {
                 return;
         }
@@ -152,6 +166,14 @@ PyMalelf_refresh_binary(Binary *self)
         self->size = self->_bin->size;
         self->alloc_type = self->_bin->alloc_type;;
         self->arch = self->_bin->class;
+
+        tmp = self->ehdr;
+
+        self->ehdr = PyEhdr_create(&self->_bin->ehdr);
+        if (self->ehdr) {
+                Py_INCREF(self->ehdr);
+                Py_XDECREF(tmp);
+        }
 }
 
 static PyObject *
@@ -282,7 +304,7 @@ static PyMethodDef Binary_methods[] = {
  */
 PyTypeObject BinaryType = {
         PyVarObject_HEAD_INIT(NULL, 0)
-        "malelf.Binary",             /*tp_name*/
+        "_malelf.Binary",             /*tp_name*/
         sizeof(Binary),             /*tp_basicsize*/
         0,                         /*tp_itemsize*/
         (destructor)Binary_dealloc, /*tp_dealloc*/
