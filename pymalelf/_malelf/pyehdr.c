@@ -93,6 +93,8 @@ Ehdr_init(Ehdr *self, PyObject *args, PyObject *kwds)
                                  "shstrndx",
                                  NULL};
 
+        printf("I'm inside Ehdr_init()\n");
+
         if (! PyArg_ParseTupleAndKeywords(args, kwds, "|Oiiiiiiiiii", kwlist,
                                           &ident, /*&type, &machine, &version,*/
                                           &entry, &phoff, &shoff, &flags,
@@ -171,6 +173,7 @@ Ehdr_clear(Ehdr *self)
 static void
 Ehdr_dealloc(Ehdr *self)
 {
+        PYDEBUG("Deallocating Ehdr\n");
         Ehdr_clear(self);
         Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -181,9 +184,9 @@ Ehdr_dealloc(Ehdr *self)
  */
 static PyMemberDef Ehdr_members[] = {
         {"ident", T_OBJECT_EX, offsetof(Ehdr, ident), 0, "Magic number and other info"},
-        {"type", T_INT, offsetof(Ehdr, type), 0, "Object file type"},
-        {"machine", T_INT, offsetof(Ehdr, machine), 0, "Architecture"},
-        {"version", T_INT, offsetof(Ehdr, version), 0, "Object file version"},
+        {"type", T_OBJECT_EX, offsetof(Ehdr, type), 0, "Object file type"},
+        {"machine", T_OBJECT_EX, offsetof(Ehdr, machine), 0, "Architecture"},
+        {"version", T_OBJECT_EX, offsetof(Ehdr, version), 0, "Object file version"},
         {"entry", T_INT, offsetof(Ehdr, entry), 0, " Entry point virtual address"},
         {"phoff", T_INT, offsetof(Ehdr, phoff), 0, "Program header table file offset"},
         {"shoff", T_INT, offsetof(Ehdr, shoff), 0, "Section header table file offset"},
@@ -222,7 +225,7 @@ PyTypeObject EhdrType = {
         0,                            /*tp_as_sequence*/
         0,                            /*tp_as_mapping*/
         0,                            /*tp_hash */
-        0,                            /*tp_call*/
+        0,                     /*tp_call*/
         0,                            /*tp_str*/
         0,                            /*tp_getattro*/
         0,                            /*tp_setattro*/
@@ -262,11 +265,8 @@ EhdrTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
         self = (EhdrTable *)type->tp_alloc(type, 0);
         if (NULL != self) {
-                Py_INCREF(Py_None);
-                self->name = Py_None;
-
-                Py_INCREF(Py_None);
-                self->value = Py_None;
+                self->name = 0;
+                self->value = 0;
 
                 Py_INCREF(Py_None);
                 self->meaning = Py_None;
@@ -278,8 +278,8 @@ EhdrTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 static int
 EhdrTable_init(EhdrTable *self, PyObject *args, PyObject *kwds)
 {
-        PyObject *name = NULL;
-        PyObject *value = NULL;
+         _u32 name = 0;
+        _u32 value = 0;
         PyObject *meaning = NULL;
         PyObject *tmp;
 
@@ -287,32 +287,10 @@ EhdrTable_init(EhdrTable *self, PyObject *args, PyObject *kwds)
                 "name", "value", "meaning", NULL
         };
 
-        if (! PyArg_ParseTupleAndKeywords(args, kwds, "OO|OOO", kwlist,
+        if (! PyArg_ParseTupleAndKeywords(args, kwds, "ii|iiO", kwlist,
                                           &name, &value, &meaning)) {
                 return -1;
         }
-
-        if (!name || !PyString_Check(name)) {
-                PyErr_SetString(PyExc_TypeError,
-                                "The attribute name is of type string and required.");
-                return -1;
-        }
-
-        if (!value || ! PyString_Check(value)) {
-                PyErr_SetString(PyExc_TypeError,
-                                "The attribute value is of type string and required");
-                return -1;
-        }
-
-        tmp = self->name;
-        Py_INCREF(name);
-        self->name = name;
-        Py_XDECREF(tmp);
-
-        tmp = self->value;
-        Py_INCREF(value);
-        self->value = value;
-        Py_XDECREF(tmp);
 
         if (meaning) {
                 if (! PyString_Check(meaning)) {
@@ -333,8 +311,6 @@ EhdrTable_init(EhdrTable *self, PyObject *args, PyObject *kwds)
 static int
 EhdrTable_traverse(EhdrTable *self, visitproc visit, void *arg)
 {
-        Py_VISIT(self->name);
-        Py_VISIT(self->value);
         Py_VISIT(self->meaning);
 
         return 0;
@@ -346,8 +322,6 @@ EhdrTable_traverse(EhdrTable *self, visitproc visit, void *arg)
 static int
 EhdrTable_clear(EhdrTable *self)
 {
-        Py_CLEAR(self->name);
-        Py_CLEAR(self->value);
         Py_CLEAR(self->meaning);
 
         return 0;
@@ -368,8 +342,8 @@ EhdrTable_dealloc(EhdrTable *self)
  * EhdrTable member's table
  */
 static PyMemberDef EhdrTable_members[] = {
-        {"name", T_OBJECT_EX, offsetof(EhdrTable, name), 0, "Name of field"},
-        {"value", T_OBJECT_EX, offsetof(EhdrTable, value), 0, "Value of field"},
+        {"name", T_INT, offsetof(EhdrTable, name), 0, "Name of field"},
+        {"value", T_INT, offsetof(EhdrTable, value), 0, "Value of field"},
         {"meaning", T_OBJECT_EX, offsetof(EhdrTable, meaning), 0, "Meaning of field"},
         {NULL}  /* Sentinel */
 };
@@ -399,7 +373,7 @@ PyTypeObject EhdrTableType = {
         0,                            /*tp_as_sequence*/
         0,                            /*tp_as_mapping*/
         0,                            /*tp_hash */
-        0,                            /*tp_call*/
+        0,               /*tp_call*/
         0,                            /*tp_str*/
         0,                            /*tp_getattro*/
         0,                            /*tp_setattro*/
@@ -428,26 +402,22 @@ PyTypeObject EhdrTableType = {
 
 /** PyMalelf Ehdr API */
 
-PyObject* PyEhdr_create(MalelfEhdr *mehdr)
+Ehdr* PyEhdr_create(MalelfEhdr *mehdr)
 {
         MalelfEhdrTable etable;
         EhdrTable *tbl;
-        PyObject *args = NULL;
-        PyObject *tmp;
         _u32 result = MALELF_SUCCESS;
-        Ehdr *ehdr;
+        Ehdr *ehdr = NULL;
 
-        args = Py_BuildValue("");
-        ehdr = (Ehdr *) PyObject_CallObject((PyObject *) &EhdrType, args);
+        ehdr = (Ehdr *) PyObject_New(Ehdr, &EhdrType);
 
         if (! ehdr) {
-                PyErr_NoMemory();
+                PyErr_SetString(GETSTATE(ehdr)->error,
+                                "Failed to instantiate a Ehdr class");
                 return NULL;
         }
 
-        ehdr->ident = PyString_FromStringAndSize((const char *) MALELF_ELF_FIELD(mehdr,
-                                                                  e_ident,
-                                                                  result),
+        ehdr->ident = PyString_FromStringAndSize((const char *) mehdr->uhdr.h32->e_ident,
                                                  0x10);
         if (MALELF_SUCCESS != result) {
                 RAISE_MALELF_ERROR(self);
@@ -456,27 +426,37 @@ PyObject* PyEhdr_create(MalelfEhdr *mehdr)
         Py_INCREF(ehdr->ident);
 
         CHECK_ERROR(malelf_ehdr_get_type(mehdr, &etable));
-        args = Py_BuildValue("sss", etable.name, etable.value, etable.meaning);
-        tmp = PyObject_CallObject((PyObject *) &EhdrTableType, args);
-        Py_INCREF(tmp);
-        Py_XDECREF(args);
-        ehdr->type = tmp;
+        tbl = (EhdrTable *) PyObject_New(EhdrTable, &EhdrTableType);
+        if (! tbl) {
+                PyErr_SetString(GETSTATE(tbl)->error,
+                                "Failed to allocate EhdrTable object");
+                return NULL;
+        }
+
+        tbl->name = etable.name;
+        tbl->value = etable.value;
+        tbl->meaning = PyUnicode_FromString(etable.meaning);
+
+        Py_INCREF(tbl);
+        ehdr->type = (PyObject *) tbl;
 
         CHECK_ERROR(malelf_ehdr_get_machine(mehdr, &etable));
-        args = Py_BuildValue("sss", etable.name, etable.value, etable.meaning);
-        tmp = PyObject_CallObject((PyObject *) &EhdrTableType, args);
-        Py_INCREF(tmp);
-        Py_XDECREF(args);
+        tbl = (EhdrTable *) PyObject_New(EhdrTable, &EhdrTableType);
+        tbl->name = etable.name;
+        tbl->value = etable.value;
+        tbl->meaning = PyUnicode_FromString(etable.meaning);
+        Py_INCREF(tbl);
 
-        ehdr->machine = tmp;
+        ehdr->machine = (PyObject *) tbl;
 
         CHECK_ERROR(malelf_ehdr_get_version(mehdr, &etable));
-        args = Py_BuildValue("sss", etable.name, etable.value, etable.meaning);
-        tmp = PyObject_CallObject((PyObject *) &EhdrTableType, args);
-        Py_INCREF(tmp);
-        Py_XDECREF(args);
+        tbl = (EhdrTable *) PyObject_New(EhdrTable, &EhdrTableType);
+        tbl->name = etable.name;
+        tbl->value = etable.value;
+        tbl->meaning = PyUnicode_FromString(etable.meaning);
+        Py_INCREF(tbl);
 
-        ehdr->version = tmp;
+        ehdr->version = (PyObject *) tbl;
 
         CHECK_ERROR(malelf_ehdr_get_entry(mehdr, &(ehdr->entry)));
         CHECK_ERROR(malelf_ehdr_get_phoff(mehdr, &(ehdr->phoff)));
@@ -488,4 +468,6 @@ PyObject* PyEhdr_create(MalelfEhdr *mehdr)
         CHECK_ERROR(malelf_ehdr_get_shnum(mehdr, &(ehdr->shnum)));
         CHECK_ERROR(malelf_ehdr_get_shentsize(mehdr, &(ehdr->shentsize)));
         CHECK_ERROR(malelf_ehdr_get_shstrndx(mehdr, &(ehdr->shstrndx)));
+
+        return ehdr;
 }

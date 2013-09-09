@@ -14,7 +14,6 @@ Binary_traverse(Binary *self, visitproc visit, void *arg)
 {
         Py_VISIT(self->fname);
         Py_VISIT(self->mem);
-        Py_VISIT(self->ehdr);
         Py_VISIT(self->phdr);
         Py_VISIT(self->shdr);
 
@@ -28,7 +27,6 @@ static int Binary_clear(Binary *self)
 {
         Py_CLEAR(self->fname);
         Py_CLEAR(self->mem);
-        Py_CLEAR(self->ehdr);
         Py_CLEAR(self->phdr);
         Py_CLEAR(self->shdr);
 
@@ -132,13 +130,13 @@ Binary_init(Binary *self, PyObject *args, PyObject *kwds)
         return 0;
 }
 
-static void
+static _u32
 PyMalelf_refresh_binary(Binary *self)
 {
         _u32 result;
 
         if (! self->_bin) {
-                return;
+                return MALELF_ERROR;
         }
 
         PyObject *tmp = self->fname;
@@ -167,13 +165,19 @@ PyMalelf_refresh_binary(Binary *self)
         self->alloc_type = self->_bin->alloc_type;;
         self->arch = self->_bin->class;
 
-        tmp = self->ehdr;
-
-        self->ehdr = PyEhdr_create(&self->_bin->ehdr);
-        if (self->ehdr) {
-                Py_INCREF(self->ehdr);
-                Py_XDECREF(tmp);
+        if (NULL != self->_bin && NULL != &(self->_bin->ehdr)) {
+                tmp = (PyObject *)self->ehdr;
+                self->ehdr = (Ehdr *) PyEhdr_create(&self->_bin->ehdr);
+                if (self->ehdr) {
+                        Py_INCREF(self->ehdr);
+                        Py_XDECREF(tmp);
+                } else {
+                        self->ehdr = (Ehdr *) tmp;
+                        return MALELF_ERROR;
+                }
         }
+
+        return MALELF_SUCCESS;
 }
 
 static PyObject *
@@ -255,7 +259,12 @@ Binary_open(Binary *self, PyObject *args, PyObject *kwds)
                 return NULL;
         }
 
-        PyMalelf_refresh_binary(self);
+        result = PyMalelf_refresh_binary(self);
+
+        if (MALELF_SUCCESS != result) {
+                return NULL;
+        }
+
         PyObject *success = PyBool_FromLong(1);
         Py_INCREF(success);
         return success;

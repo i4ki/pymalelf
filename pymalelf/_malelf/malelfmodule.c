@@ -203,6 +203,16 @@ init_malelf(void)
         Py_INCREF(&EhdrType);
         PyModule_AddObject(m, "Ehdr", (PyObject *) &EhdrType);
 
+        if (PyType_Ready(&EhdrTableType) < 0) {
+                Py_DECREF(m);
+                Py_DECREF(st->error);
+                Py_DECREF(&EhdrType);
+                INITERROR;
+        }
+
+        Py_INCREF(&EhdrTableType);
+        PyModule_AddObject(m, "EhdrTable", (PyObject *) &EhdrTableType);
+
 #if defined(IS_PY3K)
         return m;
 #endif

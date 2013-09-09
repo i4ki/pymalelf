@@ -8,8 +8,8 @@
 
 typedef struct {
         PyObject_HEAD
-        PyObject *name;
-        PyObject *value;
+        _u32 name;
+        _u32 value;
         PyObject *meaning;
 } EhdrTable;
 
@@ -35,7 +35,8 @@ typedef struct {
 } Ehdr;
 
 extern PyTypeObject EhdrType;
-extern PyObject *PyEhdr_create(MalelfEhdr *ehdr);
+extern PyTypeObject EhdrTableType;
+extern Ehdr* PyEhdr_create(MalelfEhdr *ehdr);
 
 #if !defined(IS_PY3K)
 extern struct module_state _state;
