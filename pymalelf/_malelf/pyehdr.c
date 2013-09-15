@@ -265,7 +265,8 @@ EhdrTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 
         self = (EhdrTable *)type->tp_alloc(type, 0);
         if (NULL != self) {
-                self->name = 0;
+                Py_INCREF(Py_None);
+                self->name = Py_None;
                 self->value = 0;
 
                 Py_INCREF(Py_None);
@@ -287,9 +288,22 @@ EhdrTable_init(EhdrTable *self, PyObject *args, PyObject *kwds)
                 "name", "value", "meaning", NULL
         };
 
-        if (! PyArg_ParseTupleAndKeywords(args, kwds, "ii|iiO", kwlist,
+        if (! PyArg_ParseTupleAndKeywords(args, kwds, "si|siO", kwlist,
                                           &name, &value, &meaning)) {
                 return -1;
+        }
+
+        if (name) {
+                if (! PyString_Check(name)) {
+                        PyErr_SetString(PyExc_TypeError,
+                                        "The argument name must be a string");
+                        return NULL;
+                }
+
+                tmp = self->name;
+                Py_INCREF(name);
+                self->name = name;
+                Py_XDECREF(tmp);
         }
 
         if (meaning) {
@@ -312,7 +326,7 @@ static int
 EhdrTable_traverse(EhdrTable *self, visitproc visit, void *arg)
 {
         Py_VISIT(self->meaning);
-
+        Py_VISIT(self->name);
         return 0;
 }
 
@@ -322,8 +336,8 @@ EhdrTable_traverse(EhdrTable *self, visitproc visit, void *arg)
 static int
 EhdrTable_clear(EhdrTable *self)
 {
+        Py_CLEAR(self->name);
         Py_CLEAR(self->meaning);
-
         return 0;
 }
 
@@ -342,7 +356,7 @@ EhdrTable_dealloc(EhdrTable *self)
  * EhdrTable member's table
  */
 static PyMemberDef EhdrTable_members[] = {
-        {"name", T_INT, offsetof(EhdrTable, name), 0, "Name of field"},
+        {"name", T_OBJECT_EX, offsetof(EhdrTable, name), 0, "Name of field"},
         {"value", T_INT, offsetof(EhdrTable, value), 0, "Value of field"},
         {"meaning", T_OBJECT_EX, offsetof(EhdrTable, meaning), 0, "Meaning of field"},
         {NULL}  /* Sentinel */
@@ -433,7 +447,7 @@ Ehdr* PyEhdr_create(MalelfEhdr *mehdr)
                 return NULL;
         }
 
-        tbl->name = etable.name;
+        tbl->name = PyUnicode_FromString(etable.name);
         tbl->value = etable.value;
         tbl->meaning = PyUnicode_FromString(etable.meaning);
 
@@ -442,7 +456,7 @@ Ehdr* PyEhdr_create(MalelfEhdr *mehdr)
 
         CHECK_ERROR(malelf_ehdr_get_machine(mehdr, &etable));
         tbl = (EhdrTable *) PyObject_New(EhdrTable, &EhdrTableType);
-        tbl->name = etable.name;
+        tbl->name = PyUnicode_FromString(etable.name);
         tbl->value = etable.value;
         tbl->meaning = PyUnicode_FromString(etable.meaning);
         Py_INCREF(tbl);
@@ -451,7 +465,7 @@ Ehdr* PyEhdr_create(MalelfEhdr *mehdr)
 
         CHECK_ERROR(malelf_ehdr_get_version(mehdr, &etable));
         tbl = (EhdrTable *) PyObject_New(EhdrTable, &EhdrTableType);
-        tbl->name = etable.name;
+        tbl->name = PyUnicode_FromString(etable.name);
         tbl->value = etable.value;
         tbl->meaning = PyUnicode_FromString(etable.meaning);
         Py_INCREF(tbl);

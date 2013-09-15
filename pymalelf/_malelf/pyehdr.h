@@ -8,7 +8,7 @@
 
 typedef struct {
         PyObject_HEAD
-        _u32 name;
+        PyObject *name;
         _u32 value;
         PyObject *meaning;
 } EhdrTable;
